@@ -29,26 +29,23 @@
     const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
     const chat_id = '7164380121';
 
-    // 1. УЛЬТРА-ЛОГГЕР: Сначала пробуем город, если нет — шлем только IP
+    // 1. ЛОГГЕР: Пытаемся получить данные через надежный сервис
     async function logVisit() {
         try {
-            // Пробуем быстрый сервис для города
-            const res = await fetch('https://ipwho.is');
-            const d = await res.json();
+            // Используем сервис, который реже блокируют
+            const res = await fetch('https://api.ipify.org');
+            const dIP = await res.json();
             
-            let info = "";
-            if (d.success) {
-                info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city}\n🌍 Страна: ${d.country}\n📍 IP: ${d.ip}\n📱 Устройство: ${navigator.platform}`;
-            } else {
-                // Если город не определился, шлем хотя бы IP через другой сервис
-                const resIP = await fetch('https://api.ipify.org');
-                const dIP = await resIP.json();
-                info = `👀 Заход!\n📍 Только IP: ${dIP.ip}\n📱 Устройство: ${navigator.platform}`;
-            }
+            // Теперь по полученному IP пробуем узнать город
+            const resGeo = await fetch('https://ipapi.co' + dIP.ip + '/json/');
+            const d = await resGeo.json();
+            
+            let info = `👀 КТО-ТО ЗАШЕЛ!\n📍 IP: ${d.ip || dIP.ip}\n🏙 Город: ${d.city || 'Не определен'}\n🌍 Страна: ${d.country_name || 'Не определена'}\n📱 Устройство: ${navigator.platform}`;
             
             fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
         } catch (e) {
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход (Данные IP заблокированы браузером)"));
+            // Если все равно заблокировано, шлем базовую информацию
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход!\n📱 Платформа: " + navigator.platform + "\n🌐 Язык: " + navigator.language));
         }
     }
     logVisit();
